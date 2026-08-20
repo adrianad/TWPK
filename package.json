@@ -1,0 +1,11 @@
+{
+  "name": "twpk",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node --env-file=.env build.mjs"
+  },
+  "devDependencies": {
+    "pagecrypt": "^6.0.1"
+  }
+}

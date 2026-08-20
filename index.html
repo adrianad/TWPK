@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TWPK — Forge Master</title>
+<style>
+:root{
+  --bg:#0a1220; --bg2:#0d1b2e; --card:#111f33; --card-hover:#16294226;
+  --ink:#e7ecf5; --ink2:#a7b3c7; --ink3:#6d7a90;
+  --gold:#d9a441; --gold-dim:#8a6a2e; --blue:#3f7fd1; --line:#22344d;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;}
+.hero{position:relative;width:100%;max-height:56vh;overflow:hidden;
+  border-bottom:1px solid var(--line);}
+.hero video{width:100%;display:block;object-fit:cover;object-position:center 30%;
+  max-height:56vh;min-height:220px;background:var(--bg);}
+/* Respect users who ask for less motion: freeze on the poster frame instead. */
+@media (prefers-reduced-motion:reduce){
+  .hero video{display:none;}
+  .hero{background:url(background-poster.jpg) center 30%/cover no-repeat;min-height:220px;
+    height:56vh;}
+}
+/* Narrow screens: a 16:9 frame is only ~220px tall at phone widths, so there is no need
+   to crop to a cinematic band — show the whole frame instead. */
+@media (max-width:700px){
+  .hero{max-height:none;}
+  .hero video{max-height:none;min-height:0;object-fit:contain;aspect-ratio:16/9;}
+}
+@media (max-width:700px) and (prefers-reduced-motion:reduce){
+  .hero{height:auto;aspect-ratio:16/9;background-size:contain;background-position:center;}
+}
+.hero::after{content:"";position:absolute;inset:0;
+  background:linear-gradient(180deg, rgba(10,18,32,0) 55%, rgba(10,18,32,.95) 100%);}
+.hero .tagline{position:absolute;right:24px;bottom:18px;text-align:right;z-index:1;
+  font-size:14px;color:var(--ink2);letter-spacing:.03em;max-width:340px;}
+.hero .tagline b{color:var(--gold);}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+   color:var(--ink3);margin:36px 0 14px;}
+.keybox{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:16px 18px;margin:20px 0 32px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.keybox input{flex:1;min-width:180px;background:var(--bg2);color:var(--ink);
+  border:1px solid var(--line);border-radius:6px;padding:9px 12px;font:inherit;font-size:14px;}
+.keybox input:focus{outline:1px solid var(--gold);border-color:var(--gold);}
+.keybox button{background:var(--gold);color:#1a1305;border:none;border-radius:6px;
+  padding:9px 16px;font:inherit;font-size:14px;font-weight:600;cursor:pointer;}
+.keybox button:hover{background:#e8b658;}
+.keybox .status{font-size:13px;color:var(--ink3);width:100%;}
+.keybox .status.ok{color:#5dcaa5;}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;
+  padding:20px 22px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;
+  gap:8px;transition:border-color .15s,transform .15s;}
+.card:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
+.card .name{font-size:17px;font-weight:600;color:var(--ink);}
+.card .desc{font-size:13.5px;color:var(--ink2);flex:1;}
+.card .open{font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;
+  font-weight:600;}
+.foot{margin-top:48px;padding-top:18px;border-top:1px solid var(--line);
+  font-size:12.5px;color:var(--ink3);}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <video autoplay muted loop playsinline preload="metadata"
+         poster="background-poster.jpg" aria-label="Twin Peaks — Forge Master">
+    <source src="background.webm" type="video/webm">
+    <source src="background.mp4" type="video/mp4">
+  </video>
+  <div class="tagline">Tools for <b>Twinpeaks [TWPK]</b>.</div>
+</div>
+
+<div class="wrap">
+
+<h1>Access key</h1>
+<div class="keybox">
+  <input type="password" id="key" placeholder="Enter access key" autocomplete="off">
+  <button id="unlock">Unlock</button>
+  <div class="status" id="status"></div>
+</div>
+
+<h1>Tools</h1>
+<div class="grid">
+  <a class="card" data-path="mission-helper/" href="mission-helper/">
+    <div class="name">Mission board optimiser</div>
+    <div class="desc">Rate resources, get a live refresh strategy, and see your expected daily/weekly yield.</div>
+    <div class="open">Open →</div>
+  </a>
+  <a class="card" data-path="clan-tech-planner/" href="clan-tech-planner/">
+    <div class="name">Clan tech planner</div>
+    <div class="desc">Plan a clan tech tree respend from scratch.</div>
+    <div class="open">Open →</div>
+  </a>
+  <a class="card" data-path="clantechrace/" href="clantechrace/">
+    <div class="name">Clan tech race</div>
+    <div class="desc">Last-day commit calculator for tech race pushes.</div>
+    <div class="open">Open →</div>
+  </a>
+  <a class="card" data-path="warledger/" href="warledger/">
+    <div class="name">War ledger</div>
+    <div class="desc">Turn a leaderboard screenshot into a spreadsheet-ready column.</div>
+    <div class="open">Open →</div>
+  </a>
+</div>
+
+<div class="foot">
+  Panels are password-protected. Enter the access key once above — it auto-unlocks every panel for
+  this browser tab. If you land on a panel without a key, it will ask for the password directly.
+</div>
+
+</div>
+
+<script>
+const KEY_STORAGE = "twpk_access_key";
+const input = document.getElementById("key");
+const status = document.getElementById("status");
+
+function setStatus(msg, ok){
+  status.textContent = msg;
+  status.className = "status" + (ok ? " ok" : "");
+}
+
+function loadKey(){
+  const k = sessionStorage.getItem(KEY_STORAGE);
+  if(k){ input.value = k; setStatus("Key set for this session.", true); }
+}
+
+document.getElementById("unlock").addEventListener("click", () => {
+  const k = input.value.trim();
+  if(!k){ setStatus("Enter a key first."); return; }
+  sessionStorage.setItem(KEY_STORAGE, k);
+  setStatus("Key set for this session.", true);
+});
+
+document.querySelectorAll(".card").forEach(card => {
+  card.addEventListener("click", (e) => {
+    const k = sessionStorage.getItem(KEY_STORAGE);
+    if(k){
+      e.preventDefault();
+      window.location.href = card.dataset.path + "#" + k;
+    }
+  });
+});
+
+input.addEventListener("keydown", e => { if(e.key === "Enter") document.getElementById("unlock").click(); });
+loadKey();
+</script>
+
+</body>
+</html>
