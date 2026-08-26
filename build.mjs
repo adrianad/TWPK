@@ -8,9 +8,9 @@ if (!password) {
 }
 
 const apps = [
+  { src: 'src/resource-sheet.html', dest: 'resources/index.html' },
   { src: 'src/mission-helper.html', dest: 'mission-helper/index.html' },
   { src: 'src/clan-tech-planner.html', dest: 'clan-tech-planner/index.html' },
-  { src: 'src/clantechrace.html', dest: 'clantechrace/index.html' },
   { src: 'src/warledger.html', dest: 'warledger/index.html' },
 ]
 

@@ -52,6 +52,8 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   padding:20px 22px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;
   gap:8px;transition:border-color .15s,transform .15s;}
 .card:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
+.card.primary{border-color:var(--gold-dim);background:#16294a;}
+.card.primary:hover{border-color:var(--gold);}
 .card .name{font-size:17px;font-weight:600;color:var(--ink);}
 .card .desc{font-size:13.5px;color:var(--ink2);flex:1;}
 .card .open{font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;
@@ -79,8 +81,13 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   <div class="status" id="status"></div>
 </div>
 
-<h1>Tools</h1>
+<h1>Tools &amp; resources</h1>
 <div class="grid">
+  <a class="card primary" data-path="resources/" href="resources/">
+    <div class="name">Resource sheet</div>
+    <div class="desc">Clan resource spreadsheet.</div>
+    <div class="open">Open →</div>
+  </a>
   <a class="card" data-path="mission-helper/" href="mission-helper/">
     <div class="name">Mission board optimiser</div>
     <div class="desc">Rate resources, get a live refresh strategy, and see your expected daily/weekly yield.</div>
@@ -89,11 +96,6 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   <a class="card" data-path="clan-tech-planner/" href="clan-tech-planner/">
     <div class="name">Clan tech planner</div>
     <div class="desc">Plan a clan tech tree respend from scratch.</div>
-    <div class="open">Open →</div>
-  </a>
-  <a class="card" data-path="clantechrace/" href="clantechrace/">
-    <div class="name">Clan tech race</div>
-    <div class="desc">Last-day commit calculator for tech race pushes.</div>
     <div class="open">Open →</div>
   </a>
   <a class="card" data-path="warledger/" href="warledger/">

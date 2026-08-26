@@ -1,7 +1,7 @@
 # TWPK — project notes
 
 Static site for Twinpeaks [TWPK] game tools, deployed on **GitHub Pages** from `main` / root.
-A public landing page (`index.html`) links to four **password-encrypted** app panels, each in its
+A public landing page (`index.html`) links to several **password-encrypted** panels, each in its
 own subdirectory. Zero build server — the encrypted output is committed.
 
 ## Layout
@@ -12,11 +12,34 @@ background.webm/.mp4/-poster.jpg   hero video + fallback + poster (committed)
 build.mjs                      encrypts src/ -> subdir/index.html
 .env                           GITIGNORED — PAGECRYPT_PASSWORD=...
 src/                           GITIGNORED — plaintext app sources (edit these!)
+src/archive/                   GITIGNORED — sources for unpublished/seasonal tools (see below)
+resources/index.html           GENERATED + committed — encrypted; auto-redirects to a Google Sheet
 mission-helper/index.html      GENERATED + committed — encrypted
 clan-tech-planner/index.html   GENERATED + committed — encrypted
-clantechrace/index.html        GENERATED + committed — encrypted
 warledger/index.html           GENERATED + committed — encrypted
 ```
+
+### The `resources` panel is a redirect, not an app
+
+`src/resource-sheet.html` is not a tool — it's a themed loading page that immediately
+`location.replace()`s to a Google Sheets URL, with a visible fallback link in case the redirect is
+blocked. It's encrypted like any other panel for one reason: **the sheet URL itself must not be
+public.** `index.html` is served plaintext on GitHub Pages, so a plain `<a href>` there would leak
+the URL to anyone who finds the site. Routing it through pagecrypt means the URL only ever exists in
+gitignored `src/` and inside the AES-GCM ciphertext — same guarantee as the app panels. To change the
+destination sheet, edit the URL in `src/resource-sheet.html`, then `npm run build`.
+
+### Archiving a seasonal tool
+
+Some tools (e.g. a tech-race event calculator) are only relevant for part of a season. To retire one
+without losing it:
+1. `mv src/<name>.html src/archive/<name>.html` — keeps the source on disk (gitignored either way,
+   `archive/` just documents intent) so it can be restored in minutes.
+2. `git rm -r <name>/` — unpublishes the encrypted panel from the live site.
+3. Remove its entry from the `apps` array in `build.mjs` and its card from `index.html`.
+
+To bring it back next season: reverse the move, re-add the `apps` entry and the card, `npm run
+build`, commit.
 
 ## The golden rule
 
