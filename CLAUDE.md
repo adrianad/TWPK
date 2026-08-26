@@ -168,6 +168,44 @@ Worth re-testing after any change to the unlock path: enter the key, then click 
 panels in a row**, plus refresh and browser back/forward. That sequence is what exposed the
 `sessionStorage` collision above; a single panel opening correctly proves nothing.
 
+## Favicon
+
+Source art is the user's clan banner image (kept outside the repo, currently
+`~/Downloads/Gemini_Generated_Image_*.jpg`). It's a JPEG with a **checkerboard baked into the
+pixels** as a stand-in for transparency — JPEG has no alpha channel. A plain colour key fails
+because the triskelion and banner rod are near-white/near-grey, same tone family as the checker
+squares, so keying by colour punches holes in the logo.
+
+**Correct approach: flood-fill inward from the image border** (4-neighbour BFS over
+near-neutral, bright pixels — `max-min <= 46 and max >= 140` — seeded from every border pixel).
+This only removes the checkerboard, because it's connected to the border, and stops at the
+shield's continuous dark outline, leaving enclosed whites/greys opaque. Feather the resulting
+alpha mask with a ~0.6px Gaussian blur to soften JPEG ringing, crop to the opaque bbox, pad to a
+square, then downscale with `LANCZOS` per output size.
+
+Generated, committed files: `favicon.ico` (16/32/48/64, transparent — **must be saved from the
+full-resolution master**; saving from an already-downscaled frame silently yields only one size),
+`favicon-32.png` (transparent), `apple-touch-icon.png` (180×180, composited on the site's navy
+`#0a1220` since iOS flattens alpha to black), `icon-512.png` (transparent master, kept for any
+future PWA/social use).
+
+### Wiring — every page links its own favicon, no root-relative paths
+
+`index.html` links them with **relative** paths (`favicon.ico`, no leading slash), not
+root-relative (`/favicon.ico`). A leading slash resolves against the *origin's* root — under
+`http://localhost:8642/` that's the served folder, so it happens to work, but under `file://`
+(the user just opens `index.html` from disk) there is no server, so "root" means the filesystem
+root and the browser looks for `/favicon.ico` on disk. Relative paths resolve next to the HTML
+file under any origin — `file://`, localhost, and the deployed site alike.
+
+The four `src/*.html` panel sources **each carry the same three `<link>` tags too**, with
+`../favicon.ico` etc. (one level up, since each panel is served from its own subdirectory). Do
+not rely on the browser's `/favicon.ico`-at-domain-root fallback instead — it doesn't apply under
+`file://` at all, and even over real HTTP it's a fallback of last resort that pagecrypt's
+`document.write()`-based page replacement can interfere with. Because the links live in `src/`,
+**changing the favicon requires `npm run build`** to propagate into the encrypted panels, same as
+any other source edit.
+
 ## Deploy
 
 Commit and push to `main`; GitHub Pages serves from root. `.nojekyll` is present so Jekyll does not

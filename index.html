@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TWPK — Forge Master</title>
+<link rel="icon" href="favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="theme-color" content="#0a1220">
 <style>
 :root{
   --bg:#0a1220; --bg2:#0d1b2e; --card:#111f33; --card-hover:#16294226;
@@ -52,8 +56,21 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   padding:20px 22px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;
   gap:8px;transition:border-color .15s,transform .15s;}
 .card:hover{border-color:var(--gold-dim);transform:translateY(-2px);}
-.card.primary{border-color:var(--gold-dim);background:#16294a;}
+.card.primary{position:relative;overflow:hidden;border-color:var(--gold-dim);
+  background:linear-gradient(160deg,#16294a,#182c50);
+  box-shadow:0 0 0 1px rgba(217,164,65,.12),0 0 24px -6px rgba(217,164,65,.35);}
 .card.primary:hover{border-color:var(--gold);}
+.card.primary::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(75deg,transparent 40%,rgba(217,164,65,.28) 50%,transparent 60%);
+  background-size:250% 100%;background-position:150% 0;
+  animation:shimmer 4.5s ease-in-out infinite;}
+@keyframes shimmer{
+  0%,55%{background-position:150% 0;}
+  85%,100%{background-position:-50% 0;}
+}
+@media (prefers-reduced-motion:reduce){
+  .card.primary::after{animation:none;display:none;}
+}
 .card .name{font-size:17px;font-weight:600;color:var(--ink);}
 .card .desc{font-size:13.5px;color:var(--ink2);flex:1;}
 .card .open{font-size:12px;color:var(--gold);text-transform:uppercase;letter-spacing:.05em;
