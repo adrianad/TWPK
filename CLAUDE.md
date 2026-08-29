@@ -17,6 +17,7 @@ resources/index.html           GENERATED + committed — encrypted; auto-redirec
 mission-helper/index.html      GENERATED + committed — encrypted
 clan-tech-planner/index.html   GENERATED + committed — encrypted
 warledger/index.html           GENERATED + committed — encrypted
+read/index.html                PLAIN + committed — NOT encrypted (see below)
 ```
 
 ### The `resources` panel is a redirect, not an app
@@ -28,6 +29,20 @@ public.** `index.html` is served plaintext on GitHub Pages, so a plain `<a href>
 the URL to anyone who finds the site. Routing it through pagecrypt means the URL only ever exists in
 gitignored `src/` and inside the AES-GCM ciphertext — same guarantee as the app panels. To change the
 destination sheet, edit the URL in `src/resource-sheet.html`, then `npm run build`.
+
+### Some panels are deliberately unprotected — they bypass `src/` and `build.mjs` entirely
+
+Not every tool needs the access key (e.g. `read/` — an OCR screenshot reader with nothing
+sensitive in it). Those are committed as **plain, readable HTML directly under their own
+subdirectory** — no `src/` entry, no `build.mjs` entry, no encryption step. Edit
+`read/index.html` in place; there is nothing to rebuild.
+
+**The landing-page card for one of these must omit `data-path`.** The click handler targets
+`.card[data-path]` specifically and appends `"#" + <session key>"` to the URL for magic-link
+auto-decrypt — that's correct for encrypted panels, but appending the access key to an
+unprotected page's URL would leak it into the address bar and browser history for a page that
+never needed it and can't even use it. A card without `data-path` just follows its plain `href`,
+untouched by that logic.
 
 ### Archiving a seasonal tool
 

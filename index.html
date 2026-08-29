@@ -105,6 +105,11 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
     <div class="desc">Clan resource spreadsheet.</div>
     <div class="open">Open →</div>
   </a>
+  <a class="card" href="read/">
+    <div class="name">Screenshot Reader</div>
+    <div class="desc">Read a combatant's stats from a screenshot into structured data.</div>
+    <div class="open">Open →</div>
+  </a>
   <a class="card" data-path="mission-helper/" href="mission-helper/">
     <div class="name">Mission board optimiser</div>
     <div class="desc">Rate resources, get a live refresh strategy, and see your expected daily/weekly yield.</div>
@@ -151,7 +156,7 @@ document.getElementById("unlock").addEventListener("click", () => {
   setStatus("Key set for this session.", true);
 });
 
-document.querySelectorAll(".card").forEach(card => {
+document.querySelectorAll(".card[data-path]").forEach(card => {
   card.addEventListener("click", (e) => {
     const k = sessionStorage.getItem(KEY_STORAGE);
     if(k){
