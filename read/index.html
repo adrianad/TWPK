@@ -754,6 +754,27 @@
     { label: "Apex", value: 124999 },
   ];
 
+  // Guild tech (GuildTechTreeUpgradeLibrary.json), not a per-item gear roll — never shows
+  // up on the profile-card screenshot, so these are manual-only, no OCR attempted.
+  // PlayerMoveSpeed: MaxLevel 20, ValuePerLevel 0.05 -> +5% per level, +100% at max.
+  // PlayerAttackRange: MaxLevel 3, ValuePerLevel 1.0 -> +1 per level, flat (Additive nature).
+  const MOVE_SPEED_TECH_MAX = 20, MOVE_SPEED_TECH_STEP = 0.05;
+  const ATTACK_RANGE_TECH_MAX = 3, ATTACK_RANGE_TECH_STEP = 1.0;
+  function moveSpeedTechOptionsHtml() {
+    let html = "";
+    for (let lvl = 0; lvl <= MOVE_SPEED_TECH_MAX; lvl++) {
+      html += '<option value="' + lvl + '">Lv.' + lvl + ' (+' + Math.round(lvl * MOVE_SPEED_TECH_STEP * 100) + '%)</option>';
+    }
+    return html;
+  }
+  function attackRangeTechOptionsHtml() {
+    let html = "";
+    for (let lvl = 0; lvl <= ATTACK_RANGE_TECH_MAX; lvl++) {
+      html += '<option value="' + lvl + '">Lv.' + lvl + ' (+' + (lvl * ATTACK_RANGE_TECH_STEP) + ')</option>';
+    }
+    return html;
+  }
+
 
   function escapeHtml(s) {
     return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
@@ -914,6 +935,13 @@
       '</button>' +
       '<div class="picker-panel hidden" id="weapon-panel-' + side + '"></div>' +
       '</div>';
+
+    html += '<div class="divider"></div>';
+    html += '<div class="section-label">Guild Tech</div>';
+    html += '<div class="field-row"><label for="in-' + side + '-moveSpeedTech">Move Speed Tech</label>' +
+      '<select id="in-' + side + '-moveSpeedTech">' + moveSpeedTechOptionsHtml() + '</select></div>';
+    html += '<div class="field-row"><label for="in-' + side + '-attackRangeTech">Attack Range Tech</label>' +
+      '<select id="in-' + side + '-attackRangeTech">' + attackRangeTechOptionsHtml() + '</select></div>';
 
     html += '<div class="divider"></div>';
     html += '<div class="section-label">Skills (up to 3)</div>';
@@ -1973,6 +2001,10 @@
     const ascSel = document.getElementById("in-" + side + "-skillAsc");
     obj.skillAscension = ascSel ? (parseInt(ascSel.value, 10) || 0) : 0;
     obj.weaponIdx = selectedWeaponIdx[side] || 0;
+    const moveSpeedSel = document.getElementById("in-" + side + "-moveSpeedTech");
+    obj.moveSpeedLevel = moveSpeedSel ? (parseInt(moveSpeedSel.value, 10) || 0) : 0;
+    const attackRangeSel = document.getElementById("in-" + side + "-attackRangeTech");
+    obj.attackRangeLevel = attackRangeSel ? (parseInt(attackRangeSel.value, 10) || 0) : 0;
     const skills = [];
     for (let i = 0; i < 3; i++) {
       const id = selectedSkill[side][i];
