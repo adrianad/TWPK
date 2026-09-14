@@ -176,9 +176,9 @@ see in-game for a batch of tickets (the size of one summon) instead of a percent
 166 for 5 tickets against a base of 200 works out to a 17% reduction, and the calculator does that
 division for you.</li>
 <li>Mounts/Pets/Skills calculations always start from <b>ascension 0</b> relative to whatever level
-and progress you enter — there's no separate "current ascension" input, since the summon-banner
-odds and level thresholds never depend on which ascension tier you're on, only on your current
-level. The <i>target</i> ascension in "Cost to a target" mode is unaffected by this.</li>
+and progress you enter, and "Cost to a target" targets a level within that same pass — there's no
+ascension-tier input anywhere on these tabs, since the summon-banner odds and level thresholds
+never depend on which ascension tier you're on, only on your current level.</li>
 <li>Item Age names (Primitive…Divine) come straight from the game's own localization strings, not a
 placeholder numbering — a level doesn't "unlock" an Age any more than it unlocks a rarity; it just
 raises that Age's drop chance from 0%.</li>
@@ -420,13 +420,8 @@ function buildSummonTab(track, opts){
 
     <div class="mpanel" id="${P}m-target">
       <div class="card">
-        <div class="grid2">
-          <div class="field"><label><b>Target level</b></label>
-            <select id="${P}targetLevel"></select></div>
-          <div class="field"><label><b>Target ascension</b></label>
-            <select id="${P}targetAsc"><option value="0">0</option><option value="1">1</option>
-              <option value="2">2</option><option value="3" selected>3</option></select></div>
-        </div>
+        <div class="field" style="max-width:280px"><label><b>Target level</b></label>
+          <select id="${P}targetLevel"></select></div>
         <div class="metric" style="max-width:280px;margin-top:14px"><div class="lab">${cfg.currency} needed</div>
           <div class="big" id="${P}targetCost">–</div><div class="note" id="${P}targetSub"></div></div>
       </div>
@@ -555,17 +550,19 @@ function buildSummonTab(track, opts){
     document.getElementById(P+"maxCost").textContent = fmt(toMax.currency);
     document.getElementById(P+"maxSub").textContent = `${fmt(toMax.summons)} summons needed`;
 
-    // --- target mode ---
+    // --- target mode --- a target level below the current one means "that level, but in the
+    // next ascension" -- there's no ascension-tier input, so this is the only way to express it.
     const targetLevel = +targetSel.value;
-    const targetAsc = +document.getElementById(P+"targetAsc").value;
-    const toTarget = neededSummonCost(track, {level, progress, ascension, targetLevel, targetAscension:targetAsc,
+    const targetAscension = targetLevel < level ? 1 : 0;
+    const toTarget = neededSummonCost(track, {level, progress, ascension, targetLevel, targetAscension,
       finalCostPerSummon, unitsPerSummon});
     document.getElementById(P+"targetCost").textContent = fmt(toTarget.currency);
     document.getElementById(P+"targetSub").textContent = toTarget.currency===0
-      ? "Already there (or past it)." : `${fmt(toTarget.summons)} summons needed`;
+      ? "Already there (or past it)."
+      : `${fmt(toTarget.summons)} summons needed${targetAscension>0 ? " (next ascension)" : ""}`;
   }
 
-  [`${P}level`,`${P}progress`,`${P}currency`,`${P}costpct`,`${P}extrapct`,`${P}targetLevel`,`${P}targetAsc`]
+  [`${P}level`,`${P}progress`,`${P}currency`,`${P}costpct`,`${P}extrapct`,`${P}targetLevel`]
     .forEach(id => { const e = document.getElementById(id); if (e) e.addEventListener("input", render); });
 
   render();
