@@ -9,9 +9,6 @@ if (!password) {
 
 const apps = [
   { src: 'src/resource-sheet.html', dest: 'resources/index.html' },
-  { src: 'src/mission-helper.html', dest: 'mission-helper/index.html' },
-  { src: 'src/clan-tech-planner.html', dest: 'clan-tech-planner/index.html' },
-  { src: 'src/warledger.html', dest: 'warledger/index.html' },
 ]
 
 // pagecrypt caches its derived decryption key in sessionStorage under the fixed name "k".

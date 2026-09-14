@@ -1,24 +1,29 @@
 # TWPK — project notes
 
 Static site for Twinpeaks [TWPK] game tools, deployed on **GitHub Pages** from `main` / root.
-A public landing page (`index.html`) links to several **password-encrypted** panels, each in its
-own subdirectory. Zero build server — the encrypted output is committed.
+A public landing page (`index.html`) links to a mix of panels — most are plain and open, **one
+(`resources/`) is password-encrypted** because it fronts a URL that must stay non-public. Zero
+build server — any encrypted output is committed as ciphertext.
 
 ## Layout
 
 ```
 index.html                     landing page — PUBLIC, committed, hand-edited
 background.webm/.mp4/-poster.jpg   hero video + fallback + poster (committed)
-build.mjs                      encrypts src/ -> subdir/index.html
+build.mjs                      encrypts src/resource-sheet.html -> resources/index.html
 .env                           GITIGNORED — PAGECRYPT_PASSWORD=...
-src/                           GITIGNORED — plaintext app sources (edit these!)
+src/                           GITIGNORED — holds resource-sheet.html, the one encrypted source
 src/archive/                   GITIGNORED — sources for unpublished/seasonal tools (see below)
 resources/index.html           GENERATED + committed — encrypted; auto-redirects to a Google Sheet
-mission-helper/index.html      GENERATED + committed — encrypted
-clan-tech-planner/index.html   GENERATED + committed — encrypted
-warledger/index.html           GENERATED + committed — encrypted
-read/index.html                PLAIN + committed — NOT encrypted (see below)
+mission-helper/index.html      PLAIN + committed — NOT encrypted, edit in place
+warledger/index.html           PLAIN + committed — NOT encrypted, edit in place
+read/index.html                PLAIN + committed — NOT encrypted, edit in place
+ascension/index.html           PLAIN + committed — NOT encrypted, edit in place
 ```
+
+`resources/` is currently the **only** panel behind the access key. Everything else was
+deliberately un-encrypted (originally protected, later opened up since the tools hold nothing
+sensitive) — see the next section for why that's safe and what changes when un-encrypting a panel.
 
 ### The `resources` panel is a redirect, not an app
 
@@ -30,12 +35,28 @@ the URL to anyone who finds the site. Routing it through pagecrypt means the URL
 gitignored `src/` and inside the AES-GCM ciphertext — same guarantee as the app panels. To change the
 destination sheet, edit the URL in `src/resource-sheet.html`, then `npm run build`.
 
-### Some panels are deliberately unprotected — they bypass `src/` and `build.mjs` entirely
+### Most panels are deliberately unprotected — they bypass `src/` and `build.mjs` entirely
 
-Not every tool needs the access key (e.g. `read/` — an OCR screenshot reader with nothing
-sensitive in it). Those are committed as **plain, readable HTML directly under their own
-subdirectory** — no `src/` entry, no `build.mjs` entry, no encryption step. Edit
-`read/index.html` in place; there is nothing to rebuild.
+Not every tool needs the access key — `read/`, `mission-helper/`, `warledger/`, and `ascension/`
+all hold nothing sensitive (game-math calculators, an OCR reader), so they're committed as **plain,
+readable HTML directly under their own subdirectory** — no `src/` entry, no `build.mjs` entry, no
+encryption step. Edit `<name>/index.html` in place; there is nothing to rebuild.
+
+### `ascension/` — Forge/Mounts/Pets/Skills ascension calculator
+
+Single self-contained file, no external requests. All summon-banner odds, level thresholds,
+ascension costs/values, forge levels, and item-Age drop chances are inlined as one
+`const ASCENSION_DATA = {...}` JS literal in the `<script>` block, generated from the confirmed
+game config in `~/Desktop/fm/public/parsed_configs/<VERSION>/*.json` (the "Forge Master helper"
+app's own config snapshots).
+
+**To refresh the embedded data for a newer game version**: run
+`python3 ~/Desktop/forge-master-tools/gen-ascension-data.py` (update the `VERSION` constant at
+its top first — it reads `fm/public/parsed_configs/<VERSION>/`), then replace the
+`const ASCENSION_DATA = {...};` line in `ascension/index.html` with the script's output, and
+update the provenance comment above it. The script is not part of this repo (it lives in the
+separate `forge-master-tools` folder) since it's a one-off data generator, not something the
+site itself runs.
 
 **The landing-page card for one of these must omit `data-path`.** The click handler targets
 `.card[data-path]` specifically and appends `"#" + <session key>"` to the URL for magic-link
@@ -43,6 +64,13 @@ auto-decrypt — that's correct for encrypted panels, but appending the access k
 unprotected page's URL would leak it into the address bar and browser history for a page that
 never needed it and can't even use it. A card without `data-path` just follows its plain `href`,
 untouched by that logic.
+
+**To un-encrypt a currently-encrypted panel** (i.e. reverse the pattern, as `mission-helper` and
+`warledger` were): copy `src/<name>.html` → `<name>/index.html` verbatim (favicon `<link>` tags
+should already be present from when it was first added — check), delete `src/<name>.html`, drop
+its `apps` entry in `build.mjs`, and drop `data-path` from its card in `index.html`. The reverse —
+re-encrypting a plain panel — means moving it back into `src/`, re-adding both the `apps` entry
+and `data-path`, then `npm run build`.
 
 ### Archiving a seasonal tool
 
@@ -69,16 +97,17 @@ To change an app: edit the file in `src/`, then `npm run build`, then commit the
 
 ```sh
 npm install        # once
-npm run build      # reads .env, encrypts all four apps
+npm run build      # reads .env, encrypts src/resource-sheet.html -> resources/index.html
 ```
 
 `npm run build` = `node --env-file=.env build.mjs` (Node ≥20.6 reads `.env` natively; no dotenv).
-The build **only ever reads** `.env` — it never writes it.
+The build **only ever reads** `.env` — it never writes it. It currently only touches `resources/`
+— the one remaining encrypted panel (see "Most panels are deliberately unprotected" above).
 
 ### Password rotation
 Manual and deliberate, only when the user asks: edit `PAGECRYPT_PASSWORD` in `.env` by hand,
-run `npm run build`, commit the four regenerated files. Nothing automated changes the password.
-Keep the password **URL-fragment-safe (alphanumeric)** — see the magic-link note below.
+run `npm run build`, commit the regenerated `resources/index.html`. Nothing automated changes the
+password. Keep the password **URL-fragment-safe (alphanumeric)** — see the magic-link note below.
 
 ## ⚠️ build.mjs post-processes pagecrypt's output — do not remove this
 
@@ -102,10 +131,12 @@ key A, fails to decrypt, wipes `k`, and shows the password prompt. Symptom repor
 - `sessionStorage.k` → `sessionStorage.k_<dir>` (boundary-safe regex `/sessionStorage\.k(?![A-Za-z0-9_$])/g`)
 - `removeItem("k")` → `removeItem("k_<dir>")`
 
-e.g. `mission-helper/` → `k_mission_helper`. Verify after any build:
+e.g. `resources/` → `k_resources`. Verify after any build (only matters while more than one panel
+is encrypted at once — trivially true with just `resources/`, but re-check if a panel is ever
+re-encrypted alongside it, since that's exactly when a collision becomes possible again):
 
 ```sh
-for f in mission-helper clan-tech-planner clantechrace warledger; do
+for f in resources; do
   echo "$f: $(grep -oE 'sessionStorage\.k_[A-Za-z0-9_]+' $f/index.html | sort -u)"
 done
 ```
@@ -213,13 +244,14 @@ root-relative (`/favicon.ico`). A leading slash resolves against the *origin's* 
 root and the browser looks for `/favicon.ico` on disk. Relative paths resolve next to the HTML
 file under any origin — `file://`, localhost, and the deployed site alike.
 
-The four `src/*.html` panel sources **each carry the same three `<link>` tags too**, with
-`../favicon.ico` etc. (one level up, since each panel is served from its own subdirectory). Do
-not rely on the browser's `/favicon.ico`-at-domain-root fallback instead — it doesn't apply under
-`file://` at all, and even over real HTTP it's a fallback of last resort that pagecrypt's
-`document.write()`-based page replacement can interfere with. Because the links live in `src/`,
-**changing the favicon requires `npm run build`** to propagate into the encrypted panels, same as
-any other source edit.
+Every panel — `src/resource-sheet.html` and each plain `<name>/index.html` alike — **carries the
+same three `<link>` tags too**, with `../favicon.ico` etc. (one level up, since each panel is
+served from its own subdirectory). Do not rely on the browser's `/favicon.ico`-at-domain-root
+fallback instead — it doesn't apply under `file://` at all, and even over real HTTP it's a
+fallback of last resort that pagecrypt's `document.write()`-based page replacement can interfere
+with. Changing the favicon means editing the links in every one of those files individually;
+for `resources/` specifically, edit `src/resource-sheet.html` and `npm run build` — for a plain
+panel, edit its `<name>/index.html` directly, nothing to rebuild.
 
 ## Deploy
 

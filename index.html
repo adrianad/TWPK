@@ -51,6 +51,7 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
 .keybox button:hover{background:#e8b658;}
 .keybox .status{font-size:13px;color:var(--ink3);width:100%;}
 .keybox .status.ok{color:#5dcaa5;}
+.note{font-size:13px;color:var(--ink3);margin:8px 0 28px;}
 .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px;}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;
   padding:20px 22px;text-decoration:none;color:var(--ink);display:flex;flex-direction:column;
@@ -97,6 +98,7 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
   <button id="unlock">Unlock</button>
   <div class="status" id="status"></div>
 </div>
+<p class="note">Needed only for the Resource sheet — everything else below is open.</p>
 
 <h1>Tools &amp; resources</h1>
 <div class="grid">
@@ -110,26 +112,26 @@ h1{font-size:15px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;
     <div class="desc">Read a combatant's stats from a screenshot into structured data.</div>
     <div class="open">Open →</div>
   </a>
-  <a class="card" data-path="mission-helper/" href="mission-helper/">
+  <a class="card" href="mission-helper/">
     <div class="name">Mission board optimiser</div>
     <div class="desc">Rate resources, get a live refresh strategy, and see your expected daily/weekly yield.</div>
     <div class="open">Open →</div>
   </a>
-  <a class="card" data-path="clan-tech-planner/" href="clan-tech-planner/">
-    <div class="name">Clan tech planner</div>
-    <div class="desc">Plan a clan tech tree respend from scratch.</div>
-    <div class="open">Open →</div>
-  </a>
-  <a class="card" data-path="warledger/" href="warledger/">
+  <a class="card" href="warledger/">
     <div class="name">War ledger</div>
     <div class="desc">Turn a leaderboard screenshot into a spreadsheet-ready column.</div>
+    <div class="open">Open →</div>
+  </a>
+  <a class="card" href="ascension/">
+    <div class="name">Ascension calculator</div>
+    <div class="desc">Forge, Mounts, Pets and Skills ascension math — cost to max, cost to a target, and where your currency gets you.</div>
     <div class="open">Open →</div>
   </a>
 </div>
 
 <div class="foot">
-  Panels are password-protected. Enter the access key once above — it auto-unlocks every panel for
-  this browser tab. If you land on a panel without a key, it will ask for the password directly.
+  The Resource sheet is password-protected. Enter the access key once above — it auto-unlocks it
+  for this browser tab. If you land on it without a key, it will ask for the password directly.
 </div>
 
 </div>
