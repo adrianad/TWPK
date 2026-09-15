@@ -179,6 +179,19 @@ division for you.</li>
 and progress you enter, and "Cost to a target" targets a level within that same pass — there's no
 ascension-tier input anywhere on these tabs, since the summon-banner odds and level thresholds
 never depend on which ascension tier you're on, only on your current level.</li>
+<li><b>Reaching level 100 alone is ascension-ready — confirmed directly from the decompiled
+client</b> (<code>Game.Logic.SummonModel.IncrementSummonCount</code>, RVA <code>0x77b0680</code>),
+not inferred. The entry it consults to level up is <b>the destination level's own row, not the
+level you're leaving</b> — e.g. going from level 1 to 2 spends <code>Levels[1]</code>'s
+requirement, not <code>Levels[0]</code>'s (so <code>Levels[0]</code>, the entry for level 1, is
+never actually spent — level 1 is just the free starting point). Since the list only has 100
+entries, there's no <code>Levels[100]</code> to spend on a "leaving level 100" step — the
+decompiled bounds check fails exactly there, confirming level 100 is a hard ceiling with nothing
+further to fill. Also confirmed directly (<code>SummonModel.Reset</code>, RVA
+<code>0x77b0758</code>): ascending zeroes progress completely — it never carries over.
+<b>"Ready for ascension"</b> is a convenience, not a workaround for an ambiguity: checking it just
+locks the level field to 100 and starts the calculation fresh at level 1 of the next ascension,
+skipping the (now-optional) step of resetting the fields yourself.</li>
 <li>Item Age names (Primitive…Divine) come straight from the game's own localization strings, not a
 placeholder numbering — a level doesn't "unlock" an Age any more than it unlocks a rarity; it just
 raises that Age's drop chance from 0%.</li>
@@ -265,6 +278,19 @@ function summonRates(track, costReductionPct, extraChancePct){
 
 // Forward simulation: spend `totalPaidSummons` summons starting at (level, progress, ascension).
 // Deterministic expected-value model — same approach as the Forge Master helper app.
+// Cost to advance FROM human level `lv` to `lv+1`. Confirmed directly from the decompiled
+// SummonModel.IncrementSummonCount (RVA 0x77b0680, reverseForge/il2cpp/decompiled_new/): the
+// entry consulted is Levels[Level_field + 1] -- i.e. the entry belonging to the level you're
+// ARRIVING at, not the one you're leaving. levels[0] (the entry for level 1) is therefore never
+// consumed by this at all -- level 1 is the free starting point, not something reached via a
+// pity bar. Levels[lv] holds the cost for lv -> lv+1 for lv 1..99; there is no levels[100], so
+// level 100 is a hard, unconditional ceiling (the bounds check in the decompiled code fails
+// exactly there, with no further threshold defined) -- confirming reaching level 100 alone
+// already ends the summon-progression algorithm, no remaining progress needs to be spent.
+function reqToAdvance(levels, lv){
+  return lv < levels.length ? levels[lv].req : null;
+}
+
 function simulateForward(track, {level, progress, ascension, totalPaidSummons, unitsPerSummon}){
   const cfg = trackConfig(track);
   const levels = cfg.levels;
@@ -280,31 +306,33 @@ function simulateForward(track, {level, progress, ascension, totalPaidSummons, u
   }
 
   for (let i = 0; i < totalPaidSummons; i++){
+    // Confirmed: level 100 has no remaining threshold of its own, so reaching it already means
+    // ascension-ready -- ascend for free before spending this summon on anything.
     if (ascLevel < 3 && currentLevel >= maxLevel){
       if (summonsToMax === null) summonsToMax = i;
       closeCurrentPhase(maxLevel, i);
-      currentLevel = 1; ascLevel++;
+      currentLevel = 1; currentProgress = 0; ascLevel++;
       phases.push({ascLevel, startLevel: 1, startSummon: i});
     }
-    const probs = levels[levelIdx(levels, currentLevel)].odds;
+    const probs = levels[levelIdx(levels, currentLevel)].odds; // odds: source-indexed (what you roll AT this level) -- unaffected by the req-indexing fix above
     for (let r = 0; r < RARITIES.length; r++) expected[r] += (probs[r] || 0) * unitsPerSummon;
 
     currentProgress += unitsPerSummon;
-    let threshold = levels[levelIdx(levels, currentLevel)].req;
+    let threshold = reqToAdvance(levels, currentLevel);
     while (threshold && currentProgress >= threshold){
       currentProgress -= threshold;
       currentLevel++;
       if (ascLevel < 3 && currentLevel >= maxLevel){
         if (summonsToMax === null) summonsToMax = i + 1;
         closeCurrentPhase(maxLevel, i + 1);
-        currentLevel = 1; ascLevel++;
+        currentLevel = 1; currentProgress = 0; ascLevel++;
         phases.push({ascLevel, startLevel: 1, startSummon: i + 1});
-        threshold = levels[0].req;
+        threshold = null;
       } else if (currentLevel > maxLevel){
         currentLevel = maxLevel;
         break;
       } else {
-        threshold = levels[levelIdx(levels, currentLevel)].req;
+        threshold = reqToAdvance(levels, currentLevel);
       }
     }
   }
@@ -324,7 +352,7 @@ function neededSummonCost(track, {level, progress, ascension, targetLevel, targe
   let totalNeeded = -progress;
   let guard = 0;
   while ((currAsc < targetAscension || (currAsc === targetAscension && currLevel < targetLevel)) && guard++ < 100000){
-    totalNeeded += levels[levelIdx(levels, currLevel)].req || 0;
+    totalNeeded += reqToAdvance(levels, currLevel) || 0;
     currLevel++;
     if (currLevel > maxLevel && currAsc < 3){ currLevel = 1; currAsc++; }
     else if (currLevel > maxLevel){ currLevel = maxLevel; break; }
@@ -361,6 +389,13 @@ function buildSummonTab(track, opts){
           <input type="number" id="${P}progress" value="0" min="0" max="20" step="1"></div>
         <div class="field"><label><b>${cfg.currency}</b> on hand</label>
           <input type="number" id="${P}currency" value="0" min="0" step="1"></div>
+      </div>
+      <div class="row" style="margin-top:6px">
+        <label style="display:flex;align-items:center;gap:8px;margin:0">
+          <input type="checkbox" id="${P}ready" style="width:auto">
+          <span><b>Ready for ascension</b><span class="sub"> — you already see the Ascend button
+            in-game; locks the level to 100 and starts the math fresh from the next ascension</span></span>
+        </label>
       </div>
       <div class="grid3" style="margin-top:14px">
         ${hasCostReduction ? `
@@ -495,26 +530,39 @@ function buildSummonTab(track, opts){
     `<tr><th>Level</th><th class="num">Damage &amp; Health multiplier</th><th class="num">Cost</th></tr>${ascRows}`;
 
   function render(){
-    const level = clamp(+document.getElementById(P+"level").value || 1, 1, 100);
-    const next = cfg.levels[levelIdx(cfg.levels, level)].req;
-    // Progress can't reach `next` -- hitting it means you've already leveled up. Cap it
-    // dynamically per level, since the requirement isn't a constant (flat 20 for Mounts,
-    // but Pets/Skills ramp per level).
+    const levelEl = document.getElementById(P+"level");
     const progressEl = document.getElementById(P+"progress");
-    progressEl.max = Math.max(0, next - 1);
-    const progress = clamp(+progressEl.value || 0, 0, Math.max(0, next - 1));
-    if (+progressEl.value !== progress) progressEl.value = progress;
-    // Always starts from ascension 0 -- the banner's odds/thresholds only depend on level, never
-    // on which ascension tier you're on, so there's no "current ascension" input to track.
-    const ascension = 0;
+    const ready = document.getElementById(P+"ready").checked;
+
+    // "Ready for ascension" means the in-game Ascend button is already showing -- locking the
+    // level field to 100 is just the visible signal; the actual calculation starts completely
+    // fresh (level 1, 0 progress) one ascension tier higher, since ascending itself is free and
+    // instant. Progress/level stop mattering the moment this is checked.
+    levelEl.disabled = ready;
+    progressEl.disabled = ready;
+    if (ready){ levelEl.value = 100; progressEl.value = 0; }
+
+    const displayLevel = clamp(+levelEl.value || 1, 1, 100);
+    const level = ready ? 1 : displayLevel;
+    const ascension = ready ? 1 : 0;
+
+    // null at level 100 -- confirmed there's no further threshold there, so no progress is
+    // possible or needed once you reach it (see reqToAdvance's comment for the decompile source).
+    const next = reqToAdvance(cfg.levels, level);
+    progressEl.max = next ? Math.max(0, next - 1) : 0;
+    const progress = (ready || !next) ? 0 : clamp(+progressEl.value || 0, 0, Math.max(0, next - 1));
+    if (!ready && next && +progressEl.value !== progress) progressEl.value = progress;
     const currency = Math.max(0, +document.getElementById(P+"currency").value || 0);
     const costPct = hasCostReduction ? (+document.getElementById(P+"costpct").value || 0) : 0;
     const extraPct = hasExtraChance ? (+document.getElementById(P+"extrapct").value || 0) : 0;
 
     const {finalCostPerSummon, unitsPerSummon} = summonRates(track, costPct, extraPct);
-    document.getElementById(P+"next").textContent =
-      `Next level needs ${fmt(next)} units (you have ${fmt(progress)}). `+
-      `Cost per summon: ${fmt(finalCostPerSummon)} ${cfg.currency}, yielding ${fmt1(unitsPerSummon)} unit(s) each.`;
+    document.getElementById(P+"next").textContent = ready
+      ? `Starting fresh at level 1 of ascension ${ascension}. Cost per summon: ${fmt(finalCostPerSummon)} ${cfg.currency}, yielding ${fmt1(unitsPerSummon)} unit(s) each.`
+      : !next
+      ? `Already at level 100 — ready to ascend, nothing more to spend here. Cost per summon: ${fmt(finalCostPerSummon)} ${cfg.currency}, yielding ${fmt1(unitsPerSummon)} unit(s) each.`
+      : `Next level needs ${fmt(next)} units (you have ${fmt(progress)}). `+
+        `Cost per summon: ${fmt(finalCostPerSummon)} ${cfg.currency}, yielding ${fmt1(unitsPerSummon)} unit(s) each.`;
 
     // --- afford mode ---
     const totalPaidSummons = Math.floor(currency / finalCostPerSummon);
@@ -552,17 +600,19 @@ function buildSummonTab(track, opts){
 
     // --- target mode --- a target level below the current one means "that level, but in the
     // next ascension" -- there's no ascension-tier input, so this is the only way to express it.
+    // Not applicable while "ready" is checked: level is already pinned to 1 of the fresh
+    // ascension, so the target is always within that same tier.
     const targetLevel = +targetSel.value;
-    const targetAscension = targetLevel < level ? 1 : 0;
+    const targetAscension = (!ready && targetLevel < level) ? ascension + 1 : ascension;
     const toTarget = neededSummonCost(track, {level, progress, ascension, targetLevel, targetAscension,
       finalCostPerSummon, unitsPerSummon});
     document.getElementById(P+"targetCost").textContent = fmt(toTarget.currency);
     document.getElementById(P+"targetSub").textContent = toTarget.currency===0
       ? "Already there (or past it)."
-      : `${fmt(toTarget.summons)} summons needed${targetAscension>0 ? " (next ascension)" : ""}`;
+      : `${fmt(toTarget.summons)} summons needed${targetAscension>ascension ? " (next ascension)" : ""}`;
   }
 
-  [`${P}level`,`${P}progress`,`${P}currency`,`${P}costpct`,`${P}extrapct`,`${P}targetLevel`]
+  [`${P}level`,`${P}progress`,`${P}currency`,`${P}costpct`,`${P}extrapct`,`${P}targetLevel`,`${P}ready`]
     .forEach(id => { const e = document.getElementById(id); if (e) e.addEventListener("input", render); });
 
   render();
