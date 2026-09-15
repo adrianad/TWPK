@@ -307,11 +307,14 @@ function simulateForward(track, {level, progress, ascension, totalPaidSummons, u
 
   for (let i = 0; i < totalPaidSummons; i++){
     // Confirmed: level 100 has no remaining threshold of its own, so reaching it already means
-    // ascension-ready -- ascend for free before spending this summon on anything.
+    // ascension-ready -- ascend for free before spending this summon on anything. Ascending
+    // wipes everything summoned so far (same Reset() that zeroes progress), so the expected-units
+    // tally resets too -- it should only ever reflect what you'd actually still be holding.
     if (ascLevel < 3 && currentLevel >= maxLevel){
       if (summonsToMax === null) summonsToMax = i;
       closeCurrentPhase(maxLevel, i);
       currentLevel = 1; currentProgress = 0; ascLevel++;
+      expected.fill(0);
       phases.push({ascLevel, startLevel: 1, startSummon: i});
     }
     const probs = levels[levelIdx(levels, currentLevel)].odds; // odds: source-indexed (what you roll AT this level) -- unaffected by the req-indexing fix above
@@ -326,6 +329,7 @@ function simulateForward(track, {level, progress, ascension, totalPaidSummons, u
         if (summonsToMax === null) summonsToMax = i + 1;
         closeCurrentPhase(maxLevel, i + 1);
         currentLevel = 1; currentProgress = 0; ascLevel++;
+        expected.fill(0);
         phases.push({ascLevel, startLevel: 1, startSummon: i + 1});
         threshold = null;
       } else if (currentLevel > maxLevel){
@@ -385,7 +389,7 @@ function buildSummonTab(track, opts){
       <div class="grid3">
         <div class="field"><label><b>${opts.levelLabel}</b><span class="sub"> (1–100)</span></label>
           <input type="number" id="${P}level" value="1" min="1" max="100" step="1"></div>
-        <div class="field"><label><b>Progress toward next level</b></label>
+        <div class="field" id="${P}progressField"><label><b>Progress toward next level</b></label>
           <input type="number" id="${P}progress" value="0" min="0" max="20" step="1"></div>
         <div class="field"><label><b>${cfg.currency}</b> on hand</label>
           <input type="number" id="${P}currency" value="0" min="0" step="1"></div>
@@ -440,6 +444,9 @@ function buildSummonTab(track, opts){
           <div class="metric"><div class="lab">Summons to next ascension</div><div class="big" id="${P}toMax">–</div></div>
         </div>
         <h3 style="margin-top:16px">Expected units by rarity</h3>
+        <p class="note" id="${P}breakdownNote" style="display:none">Ascending wipes everything
+          summoned before it, so this only counts what's held since the most recent ascension —
+          see the phase breakdown below for the full history.</p>
         <div id="${P}breakdown"></div>
         <h3>Phases</h3>
         <div id="${P}phases"></div>
@@ -548,7 +555,10 @@ function buildSummonTab(track, opts){
 
     // null at level 100 -- confirmed there's no further threshold there, so no progress is
     // possible or needed once you reach it (see reqToAdvance's comment for the decompile source).
+    // Hide the field entirely rather than just capping it at 0, so it doesn't imply there's
+    // still something to enter.
     const next = reqToAdvance(cfg.levels, level);
+    document.getElementById(P+"progressField").style.display = next ? "" : "none";
     progressEl.max = next ? Math.max(0, next - 1) : 0;
     const progress = (ready || !next) ? 0 : clamp(+progressEl.value || 0, 0, Math.max(0, next - 1));
     if (!ready && next && +progressEl.value !== progress) progressEl.value = progress;
@@ -574,6 +584,7 @@ function buildSummonTab(track, opts){
     document.getElementById(P+"costSub").textContent = `${fmt(totalPaidSummons*finalCostPerSummon)} ${cfg.currency} spent`;
     document.getElementById(P+"toMax").textContent = sim.summonsToMax===null ? "—" : fmt(sim.summonsToMax);
 
+    document.getElementById(P+"breakdownNote").style.display = sim.phases.length > 1 ? "" : "none";
     const maxUnit = Math.max(...sim.expected, 1e-9);
     document.getElementById(P+"breakdown").innerHTML = RARITIES.map((r,i) => `
       <div class="row" style="justify-content:space-between;margin:4px 0">
