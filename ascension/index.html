@@ -558,7 +558,10 @@ function buildSummonTab(track, opts){
     // Hide the field entirely rather than just capping it at 0, so it doesn't imply there's
     // still something to enter.
     const next = reqToAdvance(cfg.levels, level);
-    document.getElementById(P+"progressField").style.display = next ? "" : "none";
+    // Hide whenever "Ready for ascension" is checked too -- it forces the internal calc level to
+    // 1 (a fresh start), so `next` alone wouldn't catch it even though the display shows 100 and
+    // is locked.
+    document.getElementById(P+"progressField").style.display = (ready || !next) ? "none" : "";
     progressEl.max = next ? Math.max(0, next - 1) : 0;
     const progress = (ready || !next) ? 0 : clamp(+progressEl.value || 0, 0, Math.max(0, next - 1));
     if (!ready && next && +progressEl.value !== progress) progressEl.value = progress;
